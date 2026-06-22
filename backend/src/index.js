@@ -8,6 +8,8 @@ import {clerkMiddleware} from "@clerk/express";
 import job from "./lib/cron.js";
 import { connectDB } from "./lib/db.js";
 import clerkwebhook from "./webhooks/clerk.webhook.js";
+import authRoutes from "./routes/auth.route.js";
+
 dotenv.config();
 const app = express();
 
@@ -28,6 +30,8 @@ app.use(clerkMiddleware());
 app.get("/health",(req,res)=>{
     res.status(200).json({ok:true})
 });
+
+app.use("/api/routes",authRoutes)
 
 if(fs.existsSync(publicDir)){
     app.use(express.static(publicDir))
