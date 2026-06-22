@@ -1,46 +1,54 @@
 import express from "express";
 import User from "../models/user.model.js";
-import { verifyWebhook } from "@clerk/express";
+import { verifyWebhook } from "@clerk/backend/webhooks";
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
     try {
-        const evt = await verifyWebhook(req);
-
-        const { id } = evt.data;
-        const eventType = evt.type;
-
-        if (eventType === "user.created") {
-            const { email_addresses, username, image_url, first_name, last_name } = evt.data;
-            const displayName = username || [first_name, last_name].filter(Boolean).join(" ") || "user";
-
-            await User.create({
-                clerkUserId: id,
-                username: displayName,
-                email: email_addresses[0].email_address,
-                profilePicture: image_url || "",
-            });
-            console.log(`User created: ${id}`);
+        const signingSecret = process.env.CLERK_WEBHOOK_SIGNING_SECRET;
+        if (!signingSecret) {
+            return res.status(503).json({ message: "Webhook signing secret not configured" });
         }
 
-        if (eventType === "user.updated") {
-            const { email_addresses, username, image_url, first_name, last_name } = evt.data;
-            const displayName = username || [first_name, last_name].filter(Boolean).join(" ") || "user";
+        // @clerk/backend's verifyWebhook expects a Web Request, not an Express req.
+        // express.raw() gives us req.body as a Buffer — convert to string for the Request body.
+        const payload = Buffer.isBuffer(req.body) ? req.body.toString("utf8") : String(req.body);
+        const request = new Request("https://placeholder.url/webhooks", {
+            method: "POST",
+            headers: new Headers(req.headers),
+            body: payload,
+        });
+
+        const evt = await verifyWebhook(request, { signingSecret });
+
+        const { id } = evt.data;
+
+        if (evt.type === "user.created" || evt.type === "user.updated") {
+            const { email_addresses, username, image_url, first_name, last_name, primary_email_address_id } = evt.data;
+
+            const email =
+                email_addresses?.find((e) => e.id === primary_email_address_id)?.email_address ??
+                email_addresses?.[0]?.email_address;
+
+            const displayName =
+                username || [first_name, last_name].filter(Boolean).join(" ") || "user";
 
             await User.findOneAndUpdate(
                 { clerkUserId: id },
                 {
+                    clerkUserId: id,
                     username: displayName,
-                    email: email_addresses[0].email_address,
+                    email,
                     profilePicture: image_url || "",
                 },
+                { upsert: true, new: true, setDefaultsOnInsert: true },
             );
-            console.log(`User updated: ${id}`);
+            console.log(`User synced (${evt.type}): ${id}`);
         }
 
-        if (eventType === "user.deleted") {
-            await User.findOneAndDelete({ clerkUserId: id });
+        if (evt.type === "user.deleted") {
+            if (id) await User.findOneAndDelete({ clerkUserId: id });
             console.log(`User deleted: ${id}`);
         }
 
