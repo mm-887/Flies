@@ -9,9 +9,10 @@ import job from "./lib/cron.js";
 import { connectDB } from "./lib/db.js";
 import clerkwebhook from "./webhooks/clerk.webhook.js";
 import authRoutes from "./routes/auth.route.js";
-
+import messageRoutes from "./routes/message.routes.js";
+import { server } from "./lib/socket.js";
+import {app} from "./lib/socket.js";
 dotenv.config();
-const app = express();
 
 
 const PORT = process.env.PORT || 5000;
@@ -32,6 +33,8 @@ app.get("/health",(req,res)=>{
 });
 
 app.use("/api/routes",authRoutes)
+app.use("/api/messages",messageRoutes);
+
 
 if(fs.existsSync(publicDir)){
     app.use(express.static(publicDir))
@@ -40,7 +43,7 @@ if(fs.existsSync(publicDir)){
     })
 }
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     connectDB()
     console.log(`Server is running on port ${PORT}`);
 
