@@ -2,6 +2,11 @@
 @import "@heroui/styles"; 
 @import "./styles/heroui-theme-presets.css";
 
+@theme {
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+}
+
 /* HeroUI's dark fallback uses prefers-color-scheme but forgot [data-theme="light"], so OS dark +
    app light still applied dark: utilities. Re-define so explicit light theme wins system dark. */
 @custom-variant dark {
@@ -42,7 +47,7 @@
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-12px);
+    transform: translateY(-20px);
   }
 }
 
