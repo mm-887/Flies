@@ -31,7 +31,7 @@ app.get("/health",(req,res)=>{
     res.status(200).json({ok:true})
 });
 
-app.use("/api/routes",authRoutes)
+app.use("/api/auth",authRoutes)
 app.use("/api/messages",messageRoutes);
 
 
