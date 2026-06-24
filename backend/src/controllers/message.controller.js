@@ -7,7 +7,7 @@ export async function getUser(req, res) {
   try {
     const loggedInUserId = req.user._id;
 
-    const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-clerkId");
+    const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-clerkUserId");
 
     res.status(200).json(filteredUsers);
   } catch (error) {
@@ -35,10 +35,17 @@ export async function getConversations(req, res) {
       { $sort: { lastMessageAt: -1 } },
       // 4. Look up each partner's user profile (comes back as an array).
       { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },
-      // 5. Pull that profile out of the array and make it the document.
-      { $replaceRoot: { newRoot: { $first: "$user" } } },
-      // 6. Hide the private clerkId field from the result.
-      { $project: { clerkId: 0 } },
+      // 5. Unwind the partner profile array.
+      { $unwind: "$user" },
+      // 6. Project public profile fields alongside the conversation's last message time.
+      {
+        $project: {
+          _id: "$user._id",
+          username: "$user.username",
+          profilePicture: "$user.profilePicture",
+          lastMessageAt: 1,
+        },
+      },
     ]);
 
     res.status(200).json(conversations);

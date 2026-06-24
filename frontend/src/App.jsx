@@ -1,25 +1,27 @@
 import { useState } from 'react'
-import './App.css'
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/react";
-
+import { Button } from '@heroui/react';
+import { ThemeProvider } from "./context/ThemeContext.jsx";
+import { WallpaperProvider } from "./context/WallpaperContext.jsx";
+import { Route, Routes, Navigate } from 'react-router';
+import ChatPage from './pages/ChatPage';
+import AuthPage from './pages/AuthPage';
+import { useAuth } from '@clerk/react';
 function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <div>
-      <h1>Project Flies</h1>
-      <header>
-        <Show when="signed-out">
-          <SignInButton mode="modal" />
-          <SignUpButton mode="modal" />
-        </Show>
-        <Show when="signed-in">
-          <UserButton />
-        </Show>
-      </header>
-    </div>
+  const {isSignedIn,isLoaded} = useAuth()
+      if (!isLoaded) {
+        return <h1>Loading...</h1>
+      }
+  return (      
+    <ThemeProvider>
+      <WallpaperProvider>
+        <Routes>
+      <Route path="/" element={isSignedIn ? <ChatPage /> : <Navigate to={"/auth"} />} />
+      <Route path="/auth" element={!isSignedIn ? <AuthPage /> : <Navigate to={"/"} />} />
+    </Routes>
+    </WallpaperProvider>
+    </ThemeProvider>
   )
 }
 
 export default App
-

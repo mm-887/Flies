@@ -1,7 +1,7 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import User from "./models/user.model.js";
-import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import {clerkMiddleware} from "@clerk/express";
@@ -12,7 +12,6 @@ import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.routes.js";
 import { server } from "./lib/socket.js";
 import {app} from "./lib/socket.js";
-dotenv.config();
 
 
 const PORT = process.env.PORT || 5000;
@@ -38,7 +37,7 @@ app.use("/api/messages",messageRoutes);
 
 if(fs.existsSync(publicDir)){
     app.use(express.static(publicDir))
-    app.get("/{*splat}",(req,res)=>{
+    app.get("*",(req,res)=>{
         res.sendFile(path.join(publicDir,"index.html"))
     })
 }
